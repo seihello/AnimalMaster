@@ -48,6 +48,14 @@ class GameMaster:
         # 上のプレイヤーは座標を1回転
         self.rotate_position(self.units[PlayerKind.UPPER])
 
+        self.resolve_collision(self.units[PlayerKind.LOWER])
+        self.resolve_collision(self.units[PlayerKind.UPPER])
+
+        # ID順に並べ替え
+        rearranged_lower_units = self.rearrange_units(self.units[PlayerKind.LOWER])
+        rearranged_upper_units = self.rearrange_units(self.units[PlayerKind.UPPER])
+        self.units = (rearranged_lower_units, rearranged_upper_units)
+
         self.gui.clear_units()
         self.gui.draw_units(self.units[PlayerKind.LOWER])
         self.gui.draw_units(self.units[PlayerKind.UPPER])
@@ -100,6 +108,18 @@ class GameMaster:
             if unit.initial_position == 8:
                 unit.x = 6
                 unit.y = 6
+
+    def rearrange_units(self, units):
+
+        new_units = []
+
+        for i in range(1, 9):
+            for unit in units:
+                if unit.initial_position == i:
+                    new_units.append(unit)
+
+        return tuple(new_units)
+
 
     def step(self):
 
