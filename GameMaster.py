@@ -4,8 +4,7 @@ from Common import Common
 import copy
 from enum import IntEnum
 from Battle import Battle, BattleResult
-
-
+from GameCanvas import GameCanvas
 
 class GameResult(IntEnum):
     NOT_COMPLETE = 0
@@ -15,12 +14,12 @@ class GameResult(IntEnum):
 
 class GameMaster:
 
-    def __init__(self, gui, lower_player, upper_player, first_turn_player):
-        self.gui = gui
-        #self.processing = True
-        self.current_turn = PlayerKind.LOWER
+    def __init__(self, board_game, lower_player, upper_player, first_turn_player):
 
-        self.is_playing = False
+        self.game_canvas = GameCanvas(board_game.app_frame)
+        self.game_canvas.bind('<Button-1>', board_game.on_clicked)
+
+        self.current_turn = PlayerKind.LOWER
 
         # 一応明示
         self.current_turn = first_turn_player
@@ -32,6 +31,9 @@ class GameMaster:
 
         # 駒一覧に両プレイヤーの駒をセットする
         self.units = (lower_units, upper_units)
+
+
+
 
     def start_game(self):
 
@@ -48,6 +50,7 @@ class GameMaster:
         # 上のプレイヤーは座標を1回転
         self.rotate_position(self.units[PlayerKind.UPPER])
 
+        # 同じ位置に複数の駒がある場合、1つを残して取り除く
         self.resolve_collision(self.units[PlayerKind.LOWER])
         self.resolve_collision(self.units[PlayerKind.UPPER])
 
@@ -56,14 +59,82 @@ class GameMaster:
         rearranged_upper_units = self.rearrange_units(self.units[PlayerKind.UPPER])
         self.units = (rearranged_lower_units, rearranged_upper_units)
 
-        self.gui.clear_units()
-        self.gui.draw_units(self.units[PlayerKind.LOWER])
-        self.gui.draw_units(self.units[PlayerKind.UPPER])
+        # 駒を画面表示
+        self.game_canvas.clear_units()
+        self.game_canvas.draw_units(self.units[PlayerKind.LOWER])
+        self.game_canvas.draw_units(self.units[PlayerKind.UPPER])
 
+        # ターン数をセット
         self.turn = 1
-        self.is_playing = True
 
+    # 1ターン進める
+    def step(self):
 
+        print("Step開始")
+
+        # 行動する側の駒(my_units)、行動しない側の駒(opp_units)を準備する
+        # 生きている駒だけ取得する(死んでいる駒はPlayerに渡さないようにする)
+        my_units = self.get_living_units(self.current_turn)
+        opp_units = self.get_living_units(self.get_opp_player(self.current_turn))
+
+        # 勝手にデータを変更されてもいいようにコピーを作る
+        my_units_copy = copy.deepcopy(my_units)
+        opp_units_copy = copy.deepcopy(opp_units)
+
+        # 上側のプレイヤーも下側目線で行動できるように座標をひっくり返す
+        if self.current_turn == PlayerKind.UPPER:
+            self.rotate_position(my_units_copy)
+            self.rotate_position(opp_units_copy)
+
+        # 行動するプレイヤーに駒を渡して駒を動かす方向をセットしてもらう
+        self.players[self.current_turn].move(my_units_copy, opp_units_copy)
+
+        # 上側のプレイヤーは下側目線で行動できるよう座標をひっくり返したので、処理するときは元に戻す
+        if self.current_turn == PlayerKind.UPPER:
+            self.rotate_move_direction(my_units_copy)
+
+        # オブジェクトごと上書きされないようにチェック
+        if len(my_units_copy) != len(my_units):
+            print("不正")
+
+        # オブジェクトIDもチェックしたい
+
+        # 移動方向をコピーしたオブジェクトから実オブジェクトにコピー
+        for i in range(len(my_units)):
+            my_units[i].move_direction = my_units_copy[i].move_direction
+
+        # 移動方向を元に座標を変更
+        self.move(my_units)
+
+        # 移動方向をリセット
+        self.reset_move_direction(my_units)
+
+        # 盤外に飛び出した駒は除去する
+        self.remove_outside_units(my_units)
+
+        # 行動側の駒で同じ位置に複数の駒がある場合、1つを残して除去する
+        self.resolve_collision(my_units)
+
+        # 相手の駒と同じ位置にいる場合は戦闘してどちらか一方または両方を除去する
+        self.resolve_battle(my_units, opp_units)
+
+        # ターン切替
+        self.switch_turn()
+
+        # 駒を画面表示
+        self.game_canvas.clear_units()
+        self.game_canvas.draw_units(self.units[PlayerKind.LOWER])
+        self.game_canvas.draw_units(self.units[PlayerKind.UPPER])
+
+        # ゲームの終了を判定する
+        game_end_result = self.check_game_end()
+
+        # Debug用
+        self.show_status()
+
+        return game_end_result
+
+    # 初期の駒を生成する(順番は適当)
     def create_initial_units(self, player_kind):
 
         human1 = Human(player_kind)
@@ -74,16 +145,16 @@ class GameMaster:
         cat2 = Cat(player_kind)
         wolf1 = Wolf(player_kind)
         wolf2 = Wolf(player_kind)
-        units = [human1, human2, mouse1, mouse2, cat1, cat2, wolf1, wolf2]
+
+        units = (human1, human2, mouse1, mouse2, cat1, cat2, wolf1, wolf2)
 
         return units
 
-    # 位置IDから座標に変換する
+    # 初期位置IDから座標に変換する
     def set_position_from_id(self, units):
 
         for unit in units:
 
-            # 仮想座標をセット
             if unit.initial_position == 1:
                 unit.x = 2
                 unit.y = 5
@@ -109,87 +180,28 @@ class GameMaster:
                 unit.x = 6
                 unit.y = 6
 
+    # 初期位置ID順に並べ替える
     def rearrange_units(self, units):
 
-        new_units = []
+        rearranged_units = []
 
         for i in range(1, 9):
             for unit in units:
                 if unit.initial_position == i:
-                    new_units.append(unit)
+                    rearranged_units.append(unit)
 
-        return tuple(new_units)
-
-
-    def step(self):
-
-        print("Step開始")
-
-        my_units = self.get_living_units(self.current_turn)
-        opp_units = self.get_living_units(self.get_opp_player(self.current_turn))
-
-        my_units_copy = copy.deepcopy(my_units)
-        opp_units_copy = copy.deepcopy(opp_units)
-
-        if self.current_turn == PlayerKind.UPPER:
-            self.rotate_position(my_units_copy)
-            self.rotate_position(opp_units_copy)
-
-        self.players[self.current_turn].move(my_units_copy, opp_units_copy)
-
-        if self.current_turn == PlayerKind.UPPER:
-            self.rotate_move_direction(my_units_copy)
-
-        if len(my_units_copy) != len(my_units):
-            print("不正")
-
-        # オブジェクトIDもチェックしたい
-
-        # 移動方向をマスターにコピー
-        for i in range(len(my_units)):
-            my_units[i].move_direction = my_units_copy[i].move_direction
-
-        # 移動方向を元に座標を変更
-        self.move(my_units)
-
-        # 移動方向をリセット
-        self.reset_move_direction(my_units)
-
-        ########################
-
-        self.remove_outside_units(my_units)
-
-        self.resolve_collision(my_units)
-
-        self.resolve_battle(my_units, opp_units)
-
-        ########################
-
-        # 描画処理
-        self.gui.clear_units()
-        self.gui.draw_units(self.units[PlayerKind.LOWER])
-        self.gui.draw_units(self.units[PlayerKind.UPPER])
-
-        game_end_result = self.check_game_end()
-
-        self.show_status()
-
-        # ターン切替
-        self.switch_turn()
-
-        return game_end_result
+        return tuple(rearranged_units)
 
     # 指定したプレイヤーの生きている駒一覧を取得する
     def get_living_units(self, player_kind):
+
         living_units = []
+
         for unit in self.units[player_kind]:
             if unit.is_living:
                 living_units.append(unit)
 
-        # タプルに変換
-        living_units = tuple(living_units)
-
-        return living_units
+        return tuple(living_units)
 
     def get_opp_player(self, player_kind):
         if player_kind == PlayerKind.LOWER:
@@ -197,11 +209,13 @@ class GameMaster:
         elif player_kind == PlayerKind.UPPER:
             return PlayerKind.LOWER
 
+    # 座標を一回転させる
     def rotate_position(self, units):
         for unit in units:
             unit.x = Common.MASS_NUM - 1 - unit.x
             unit.y = Common.MASS_NUM - 1 - unit.y
 
+    # 移動方向によって座標を変更する
     def move(self, units):
         for unit in units:
             if unit.move_direction == MoveDirection.STAY:
@@ -227,6 +241,7 @@ class GameMaster:
                 unit.x -= 1
                 unit.y -= 1
 
+    # 移動方向を反転する
     def rotate_move_direction(self, units):
         for unit in units:
             if unit.move_direction == MoveDirection.STAY:
@@ -258,6 +273,7 @@ class GameMaster:
                 if unit1.x == unit2.x and unit1.y == unit2.y:
                     unit1.is_living = False
 
+    # 駒が重複した場合、戦闘を発生させてどちらか一方または両方を取り除く
     def resolve_battle(self, units1, units2):
         for unit1 in units1:
             for unit2 in units2:
@@ -272,14 +288,7 @@ class GameMaster:
                     elif battle_result == BattleResult.UNIT2_WIN:
                         unit1.is_living = False
 
-
-    def battle_all(self):
-        pass
-
-    def battle(self):
-        pass
-
-    # 勝ち負け引き分けを返す
+    # ゲーム終了を判定する
     def check_game_end(self):
 
         # どちらかが敵陣マスに入ったらゲーム終了
@@ -299,6 +308,7 @@ class GameMaster:
 
         return GameResult.NOT_COMPLETE
 
+    # 敵陣営の進入によるゲーム終了を判定する
     def check_goal_arrival(self):
         for lower_unit in self.units[PlayerKind.LOWER]:
             if lower_unit.x == 3 and lower_unit.y == 0:
@@ -309,6 +319,7 @@ class GameMaster:
 
         return GameResult.NOT_COMPLETE
 
+    # 駒が全てなくなったことによるゲーム終了を判定する
     def check_unit_alive(self):
         lower_units_num = len(self.get_living_units(PlayerKind.LOWER))
         upper_units_num = len(self.get_living_units(PlayerKind.UPPER))
@@ -321,6 +332,7 @@ class GameMaster:
         else:
             return GameResult.NOT_COMPLETE
 
+    # 設定ターン数完了したことによるゲーム終了を判定する
     def check_timeout(self):
         if Common.MAX_TURN <= self.turn:
             lower_units_num = len(self.get_living_units(PlayerKind.LOWER))
@@ -334,17 +346,18 @@ class GameMaster:
         else:
             return GameResult.NOT_COMPLETE
 
-
-
+    # 盤外に飛び出した駒を除去する
     def remove_outside_units(self, units):
         for unit in units:
             if unit.x < 0 or Common.MASS_NUM -1 < unit.x or unit.y < 0 or Common.MASS_NUM - 1 < unit.y:
                 unit.is_living = False
 
+    # 移動方向を初期値に戻す
     def reset_move_direction(self, units):
         for unit in units:
             unit.move_direction = MoveDirection.STAY
 
+    # ターン切替処理
     def switch_turn(self):
         if self.current_turn == PlayerKind.LOWER:
             self.current_turn = PlayerKind.UPPER

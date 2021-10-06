@@ -12,6 +12,11 @@ class Player():
     def __init__(self, player_kind):
         self.player_kind = player_kind
 
+    # 何試合目か、何勝しているか、
+    @abstractmethod
+    def init(self, game_count, win_count, lose_count, draw_count, is_first):
+        pass
+
     # 各位置を呼び出して初期位置を決定すること
     @abstractmethod
     def deploy(self, my_units):
@@ -32,12 +37,12 @@ class SamplePlayer1(Player):
     def deploy(self, my_units):
         # 初期値をセット
         my_units[0].set_initial_position(1)
-        my_units[1].set_initial_position(2)
-        my_units[2].set_initial_position(3)
-        my_units[3].set_initial_position(4)
-        my_units[4].set_initial_position(5)
-        my_units[5].set_initial_position(6)
-        my_units[6].set_initial_position(7)
+        my_units[1].set_initial_position(3)
+        my_units[2].set_initial_position(5)
+        my_units[3].set_initial_position(7)
+        my_units[4].set_initial_position(2)
+        my_units[5].set_initial_position(4)
+        my_units[6].set_initial_position(6)
         my_units[7].set_initial_position(8)
 
         return
@@ -68,13 +73,13 @@ class SamplePlayer2(Player):
     def deploy(self, my_units):
         # 初期値をセット
         my_units[0].set_initial_position(1)
-        my_units[1].set_initial_position(2)
-        my_units[2].set_initial_position(3)
-        my_units[3].set_initial_position(4)
-        my_units[4].set_initial_position(5)
-        my_units[5].set_initial_position(6)
-        my_units[6].set_initial_position(7)
-        my_units[7].set_initial_position(8)
+        my_units[1].set_initial_position(1)
+        my_units[2].set_initial_position(2)
+        my_units[3].set_initial_position(2)
+        my_units[4].set_initial_position(3)
+        my_units[5].set_initial_position(4)
+        my_units[6].set_initial_position(5)
+        my_units[7].set_initial_position(6)
 
         return
 

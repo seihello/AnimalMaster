@@ -1,25 +1,16 @@
 from PIL import Image, ImageTk
 import tkinter as tk
-from tkinter import messagebox
+from tkinter import messagebox, Frame
 
 from Common import Common
-from Unit import UnitKind
-from Player import PlayerKind
 from GameMaster import GameResult
-from GameDisplay import GameDisplay
 
-class AppDisplay:
+class AppFrame(Frame):
     def __init__(self, root):
 
+        super().__init__(root, width=Common.WINDOW_WIDTH, height=Common.WINDOW_HEIGHT, bg='red')
+
         self.root = root
-
-        # 対戦画面
-        self.app_frame = tk.Frame(self.root, width=Common.WINDOW_WIDTH, height=Common.WINDOW_HEIGHT, bg='White')
-        self.app_frame.place(x=0, y=0)
-
-    def create_game_display(self):
-
-        self.game_display = GameDisplay(self.app_frame)
 
     def show_result(self, game_result, lower_player, upper_player):
         if game_result == GameResult.LOWER_WIN:
