@@ -1,5 +1,4 @@
 from PIL import Image, ImageTk
-import tkinter as tk
 from tkinter import messagebox, Frame
 
 from Common import Common

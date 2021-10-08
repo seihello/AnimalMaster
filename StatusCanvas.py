@@ -20,17 +20,17 @@ class StatusCanvas(Canvas):
         self.create_image(0, 0, image=self.status_bg_image, anchor='nw')
 
         self.create_text(Common.STATUS_CANVAS_WIDTH // 4,
-                         Common.STATUS_CANVAS_HEIGHT // 3 * 2,
+                         Common.STATUS_CANVAS_HEIGHT // 3 * 2 + 5,
                          text='3',
                          fill='White',
-                         font=("MSゴシック", "42", "bold"),
+                         font=("MSゴシック", "38", "bold"),
                          tag='lower_win_count')
 
         self.create_text(Common.STATUS_CANVAS_WIDTH // 4 * 3,
-                         Common.STATUS_CANVAS_HEIGHT // 3 * 2,
+                         Common.STATUS_CANVAS_HEIGHT // 3 * 2 + 5,
                          text='3',
                          fill='White',
-                         font=("MSゴシック", "42", "bold"),
+                         font=("MSゴシック", "38", "bold"),
                          tag='upper_win_count')
 
     def draw_player_name(self, lower_player_name, upper_player_name):
