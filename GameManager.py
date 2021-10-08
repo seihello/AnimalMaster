@@ -12,7 +12,7 @@ class GameResult(IntEnum):
     LOWER_WIN = 2
     UPPER_WIN = 3
 
-class GameMaster:
+class GameManager:
 
     def __init__(self, board_game, lower_player, upper_player, first_turn_player):
 

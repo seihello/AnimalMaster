@@ -1,5 +1,4 @@
-from BoardGame import BoardGame
-from GameMaster import GameMaster
+from App import App
 from Common import Common
 
 import tkinter as tk
@@ -13,7 +12,7 @@ if __name__ == '__main__':
     root.geometry(size)
     root.resizable(width=False, height=False)
     root.title('BoardGame')
-    app = BoardGame(root)
+    app = App(root)
     app.start()
     root.mainloop()
 

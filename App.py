@@ -1,8 +1,8 @@
-from GameMaster import GameMaster
+from GameManager import GameManager
 from Player import SamplePlayer1, SamplePlayer2, PlayerKind
 from AppFrame import AppFrame
 from enum import IntEnum
-from GameMaster import GameResult
+from GameManager import GameResult
 from StatusCanvas import StatusCanvas
 from Common import Common
 from GameInfo import GameInfo
@@ -13,7 +13,7 @@ class GameStatus(IntEnum):
     WAITING_NEW_GAME = 2
     RESULT = 3
 
-class BoardGame:
+class App:
 
     def __init__(self, root):
         self.app_frame = AppFrame(root)
@@ -36,40 +36,8 @@ class BoardGame:
 
     def start(self):
 
-        """Function
-
-        Parameters
-        ----------
-        a : float
-            First number
-
-        b : float
-            Second number
-
-        Returns
-        -------
-        result_sum : float
-            Sum of numbers
-
-        result_prod : float
-            Product of numbers
-        """
-
-        """Function
-
-        Args:
-            a (float): First number
-            b (float): Second number
-
-        Returns:
-            result_sum (float): Sum of numbers
-            result_prod (float): Product of numbers
-        """
-
-
-
-        self.game_master = GameMaster(self, self.lower_player, self.upper_player, PlayerKind.LOWER)
-        self.game_master.start_game()
+        self.game_manager = GameManager(self, self.lower_player, self.upper_player, PlayerKind.LOWER)
+        self.game_manager.start_game()
 
         self.game_info.game_count += 1
 
@@ -78,7 +46,7 @@ class BoardGame:
     def on_clicked(self, event):
         
         if self.status == GameStatus.PLAYING:
-            game_end_result = self.game_master.step()
+            game_end_result = self.game_manager.step()
             if game_end_result != GameResult.NOT_COMPLETE:
                 self.app_frame.show_result(game_end_result, self.lower_player, self.upper_player)
                 self.status = GameStatus.WAITING_NEW_GAME

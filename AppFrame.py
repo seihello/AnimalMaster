@@ -2,7 +2,7 @@ from PIL import Image, ImageTk
 from tkinter import messagebox, Frame
 
 from Common import Common
-from GameMaster import GameResult
+from GameManager import GameResult
 
 class AppFrame(Frame):
     def __init__(self, root):
