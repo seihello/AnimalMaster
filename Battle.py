@@ -19,10 +19,10 @@ class Battle:
     def __init__(self):
         pass
 
-    @staticmethod
-    def battle(unit_kind1, unit_kind2):
+    # 戦闘する
+    def battle(self, unit_kind1, unit_kind2):
 
-        effectivity = Battle.get_effectivity(unit_kind1, unit_kind2)
+        effectivity = self.get_effectivity(unit_kind1, unit_kind2)
 
         if effectivity == Effectivity.EVEN:
             return BattleResult.DRAW
@@ -42,8 +42,7 @@ class Battle:
             return BattleResult.UNIT2_WIN
 
     # 引数1の引数2に対する相性を返す
-    @staticmethod
-    def get_effectivity(unit_kind1, unit_kind2):
+    def get_effectivity(self, unit_kind1, unit_kind2):
 
         # 自分と相手が同じ種類
         if unit_kind1 == unit_kind2:

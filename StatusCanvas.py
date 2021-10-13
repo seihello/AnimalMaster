@@ -16,7 +16,7 @@ class StatusCanvas(Canvas):
 
         self.app_frame = app_frame
 
-        self.status_bg_image = self.get_image("status_bg.png")
+        self.status_bg_image = self.get_image("component/status_bg.png")
         self.create_image(0, 0, image=self.status_bg_image, anchor='nw')
 
         self.create_text(Common.STATUS_CANVAS_WIDTH // 4,
@@ -54,5 +54,5 @@ class StatusCanvas(Canvas):
         self.itemconfig('upper_win_count', text=str(upper_win_count))
 
     def get_image(self, file_name):
-        image = Image.open(file_name)
+        image = Image.open("img/" + file_name)
         return ImageTk.PhotoImage(image=image)

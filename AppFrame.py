@@ -11,14 +11,14 @@ class AppFrame(Frame):
 
         self.root = root
 
-    def show_result(self, game_result, lower_player, upper_player):
+    def show_result(self, game_result, lower_player_name, upper_player_name):
         if game_result == GameResult.LOWER_WIN:
-            message = lower_player.__class__.__name__ + "の勝利です"
+            message = lower_player_name + "の勝利です"
         elif game_result == GameResult.UPPER_WIN:
-            message = upper_player.__class__.__name__ + "の勝利です"
+            message = upper_player_name + "の勝利です"
         elif game_result == GameResult.DRAW:
             message = "引き分けです"
-        self.root.after(200, lambda: messagebox.showinfo('ゲーム終了', message))
+        self.root.after(100, lambda: messagebox.showinfo('ゲーム終了', message))
 
     def get_image(self, file_name):
         image = Image.open(file_name)
