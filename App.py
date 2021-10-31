@@ -1,5 +1,7 @@
 from GameManager import GameManager
-from Player import PlayerKind, Player, SamplePlayer1, SamplePlayer2
+from Player import PlayerKind, Player
+from SamplePlayer1 import SamplePlayer1
+from SamplePlayer2 import SamplePlayer2
 from AppFrame import AppFrame
 from enum import IntEnum
 from GameEnd import GameResult
@@ -8,10 +10,10 @@ from Common import Common
 from GameInfo import GameInfo
 import random
 
+
 # アプリ状態
-# TOP→PLAYING→WAITING_NEW_GAME→PLAYING→WAITING_NEW_GAME→...→PLAYING→RESULTという遷移になる
+# PLAYING→WAITING_NEW_GAME→PLAYING→WAITING_NEW_GAME→...→PLAYING→RESULTという遷移になる
 class AppStatus(IntEnum):
-    TOP = 0
     PLAYING = 1
     WAITING_NEW_GAME = 2
     RESULT = 3
@@ -59,58 +61,64 @@ class App:
     # アプリを開始する(設定回数分ゲームを繰り返す)
     def start(self):
 
-        # 最初は下のプレイヤーが先攻
-        self.start_game(PlayerKind.LOWER)
-
-    # 1回の対戦を開始する
-    # first_turn_player(PlayerKind): 先攻のプレイヤー
-    def start_game(self, first_turn_player):
-
-        # 1回分の対戦のオブジェクトを作成して開始
-        self.game_manager = GameManager(self, self.players[PlayerKind.LOWER], self.players[PlayerKind.UPPER])
-        self.game_manager.start_game(self.game_info, first_turn_player)
-
         # アプリ状態は"対戦中"
-        self.status = AppStatus.PLAYING
+        self.status = AppStatus.WAITING_NEW_GAME
 
-
+        # 乱暴だが共通化するためにクリックされたことにする
+        self.on_clicked("<Button-1>")
 
 
     # 画面をクリックした時の処理
     def on_clicked(self, event):
 
+        # 対戦終了後、再度クリックされたら次の対戦を開始
+        if self.status == AppStatus.WAITING_NEW_GAME:
+            self.game_manager = GameManager(self, self.players[PlayerKind.LOWER], self.players[PlayerKind.UPPER])
+            game_end_result = self.game_manager.start_game(self.game_info, self.get_next_first_turn_player(self.game_info.game_count))
+
+            # 1回の対戦が終了した場合
+            if game_end_result != GameResult.NOT_COMPLETE:
+                self.finish_game(game_end_result)
+            else:
+                self.status = AppStatus.PLAYING
+
         # 対戦中の場合
-        if self.status == AppStatus.PLAYING:
+        elif self.status == AppStatus.PLAYING:
 
             # 対戦管理クラスに通知して1ターン進める
             game_end_result = self.game_manager.step()
 
             # 1回の対戦が終了した場合
             if game_end_result != GameResult.NOT_COMPLETE:
+                self.finish_game(game_end_result)
 
-                # 結果をダイアログ表示
-                self.app_frame.show_result(game_end_result, self.players[PlayerKind.LOWER].name, self.players[PlayerKind.UPPER].name)
 
-                # 対戦数と勝利数情報を更新
-                self.game_info.game_count += 1
-                if game_end_result == GameResult.LOWER_WIN:
-                    self.game_info.win_count[PlayerKind.LOWER] += 1
-                elif game_end_result == GameResult.UPPER_WIN:
-                    self.game_info.win_count[PlayerKind.UPPER] += 1
 
-                # ステータス画面の勝利数を更新
-                self.status_canvas.update_win_count(self.game_info.win_count[PlayerKind.LOWER], self.game_info.win_count[PlayerKind.UPPER], 0)
+    # 1回の対戦を終了する
+    def finish_game(self, game_end_result):
 
-                # 対戦がまだ残っていれば継続
-                # 設定回数の対戦が終了していたら次の対戦に進まないように状態をセット
-                if self.game_info.game_count < self.MAX_GAME_COUNT:
-                    self.status = AppStatus.WAITING_NEW_GAME
-                else:
-                    self.status = AppStatus.RESULT
+        # 結果をダイアログ表示
+        self.app_frame.show_result(game_end_result, self.players[PlayerKind.LOWER].name,
+                                   self.players[PlayerKind.UPPER].name)
 
-        # 対戦終了後、再度クリックされたら次の対戦を開始
-        elif self.status == AppStatus.WAITING_NEW_GAME:
-            self.start_game(self.get_next_first_turn_player(self.game_info.game_count))
+        # 対戦数と勝利数情報を更新
+        self.game_info.game_count += 1
+        if game_end_result == GameResult.LOWER_WIN:
+            self.game_info.win_count[PlayerKind.LOWER] += 1
+        elif game_end_result == GameResult.UPPER_WIN:
+            self.game_info.win_count[PlayerKind.UPPER] += 1
+
+        # ステータス画面の勝利数を更新
+        self.status_canvas.update_win_count(self.game_info.win_count[PlayerKind.LOWER],
+                                            self.game_info.win_count[PlayerKind.UPPER], 0)
+
+        # 対戦がまだ残っていれば継続
+        # 設定回数の対戦が終了していたら次の対戦に進まないように状態をセット
+        if self.game_info.game_count < self.MAX_GAME_COUNT:
+            self.status = AppStatus.WAITING_NEW_GAME
+        else:
+            self.status = AppStatus.RESULT
+
 
     # 先攻のプレイヤーを求める
     def get_next_first_turn_player(self, game_count):

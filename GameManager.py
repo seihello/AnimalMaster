@@ -25,11 +25,6 @@ class GameManager:
         self.collision = Collision()
         self.game_end = GameEnd()
 
-        # 駒を作成してセット
-        lower_units = self.create_initial_units(PlayerKind.LOWER)
-        upper_units = self.create_initial_units(PlayerKind.UPPER)
-        self.units = (lower_units, upper_units)
-
         # 対戦画面を作成
         self.game_canvas = GameCanvas(app.app_frame)
         self.game_canvas.bind('<Button-1>', app.on_clicked)
@@ -37,6 +32,7 @@ class GameManager:
         # その他メンバ変数の定義を明示
         self.current_turn_player = PlayerKind.LOWER
         self.turn = 0
+        self.units = ()
 
     # @brief    1回の対戦を開始する
     # @param    game_info   現時点の対戦
@@ -46,29 +42,20 @@ class GameManager:
         self.current_turn_player = first_turn_player
 
         # Playerに現在の勝敗数と今回どちらが先攻の情報を渡す
-        self.set_game_info(game_info, first_turn_player)
+        is_lower_successful, lower_units = self.prepare_player(PlayerKind.LOWER, game_info, first_turn_player)
+        is_upper_successful, upper_units = self.prepare_player(PlayerKind.UPPER, game_info, first_turn_player)
 
-        # 各プレイヤーに駒の初期配置を決定してもらう
-        self.players[PlayerKind.LOWER].deploy(self.units[PlayerKind.LOWER])
-        self.players[PlayerKind.UPPER].deploy(self.units[PlayerKind.UPPER])
+        # 上側のプレイヤーでエラーが起こったら下側の勝利
+        if is_lower_successful and not is_upper_successful:
+            return GameResult.LOWER_WIN
+        # 下側のプレイヤーでエラーが起こったら上側の勝利
+        elif not is_lower_successful and is_upper_successful:
+            return GameResult.UPPER_WIN
+        # 両方のプレイヤーでエラーが起こったら引き分け
+        elif not is_lower_successful and not is_upper_successful:
+            return GameResult.DRAW
 
-        # オブジェクトIDチェック
-
-        # 位置IDから座標に変換する
-        self.set_position_from_id(self.units[PlayerKind.LOWER])
-        self.set_position_from_id(self.units[PlayerKind.UPPER])
-
-        # 上のプレイヤーは座標を1回転
-        self.rotate_position(self.units[PlayerKind.UPPER])
-
-        # 同じ位置に複数の駒がある場合、1つを残して取り除く
-        self.collision.resolve_my_collision(self.units[PlayerKind.LOWER])
-        self.collision.resolve_my_collision(self.units[PlayerKind.UPPER])
-
-        # ID順に並べ替え
-        rearranged_lower_units = self.rearrange_units(self.units[PlayerKind.LOWER])
-        rearranged_upper_units = self.rearrange_units(self.units[PlayerKind.UPPER])
-        self.units = (rearranged_lower_units, rearranged_upper_units)
+        self.units = (lower_units, upper_units)
 
         # ターン数をセット
         self.turn = 1
@@ -78,7 +65,50 @@ class GameManager:
         self.game_canvas.draw_units(self.units[PlayerKind.LOWER])
         self.game_canvas.draw_units(self.units[PlayerKind.UPPER])
 
+        return GameResult.NOT_COMPLETE
 
+    def prepare_player(self, player_kind, game_info, first_turn_player):
+
+        # 引き分け回数を算出
+        draw_count = game_info.game_count - game_info.win_count[PlayerKind.LOWER] - game_info.win_count[PlayerKind.UPPER]
+
+        # 各プレイヤーに駒の初期配置を決定してもらう
+        try:
+            self.players[player_kind].set_game_info(game_info.game_count,
+                                                    game_info.win_count[player_kind],
+                                                    game_info.win_count[Player.get_opp_player_kind(player_kind)],
+                                                    draw_count,
+                                                    first_turn_player == player_kind)
+        except Exception as exception:
+            print(self.players[self.current_turn_player].name + " Exception : " + str(exception))
+            return False, ()
+
+
+        # 駒を作成
+        units = self.create_initial_units(player_kind)
+
+        # 各プレイヤーに駒の初期配置を決定してもらう
+        try:
+            self.players[player_kind].deploy(units)
+        except Exception as exception:
+            print(self.players[self.current_turn_player].name + " Exception : " + str(exception))
+            return False, ()
+
+
+        # 位置IDから座標に変換する
+        self.set_position_from_id(units)
+
+        # 上のプレイヤーは座標を1回転
+        if player_kind == PlayerKind.UPPER:
+            self.rotate_position(units)
+
+        # 同じ位置に複数の駒がある場合、1つを残して取り除く
+        self.collision.resolve_my_collision(units)
+
+        # ID順に並べ替え
+        rearranged_units = self.rearrange_units(units)
+
+        return True, rearranged_units
 
     # 1ターン進める
     def step(self):
@@ -98,7 +128,15 @@ class GameManager:
             self.rotate_position(opp_units_copy)
 
         # 行動するプレイヤーに駒を渡して駒を動かす方向をセットしてもらう
-        self.players[self.current_turn_player].move(my_units_copy, opp_units_copy)
+        try:
+            self.players[self.current_turn_player].move(my_units_copy, opp_units_copy)
+        except Exception as exception:
+            print(self.players[self.current_turn_player].name + " Exception : " + str(exception))
+
+            if self.current_turn_player == PlayerKind.LOWER:
+                return GameResult.UPPER_WIN
+            elif self.current_turn_player == PlayerKind.UPPER:
+                return GameResult.LOWER_WIN
 
         # 上側のプレイヤーは下側目線で行動できるよう座標をひっくり返したので、処理するときは元に戻す
         if self.current_turn_player == PlayerKind.UPPER:
@@ -144,24 +182,7 @@ class GameManager:
 
     ### ここから下はprivate ###
 
-    # Playerに現在の勝敗数と今回どちらが先攻の情報を渡す
-    def set_game_info(self, game_info, first_turn_player):
 
-        # 引き分け回数を算出
-        draw_count = game_info.game_count - game_info.win_count[PlayerKind.LOWER] - game_info.win_count[
-            PlayerKind.UPPER]
-
-        # 各プレイヤーに駒の初期配置を決定してもらう
-        self.players[PlayerKind.LOWER].set_game_info(game_info.game_count,
-                                                     game_info.win_count[PlayerKind.LOWER],
-                                                     game_info.win_count[PlayerKind.UPPER],
-                                                     draw_count,
-                                                     first_turn_player == PlayerKind.LOWER)
-        self.players[PlayerKind.UPPER].set_game_info(game_info.game_count,
-                                                     game_info.win_count[PlayerKind.UPPER],
-                                                     game_info.win_count[PlayerKind.LOWER],
-                                                     draw_count,
-                                                     first_turn_player == PlayerKind.UPPER)
 
     # 移動方向によって座標を変更する
     def move_units(self, units):
