@@ -3,10 +3,10 @@ from Common import Common
 
 # 1回の対戦結果
 class GameResult(IntEnum):
-    NOT_COMPLETE = 0
-    DRAW = 1
-    LOWER_WIN = 2
-    UPPER_WIN = 3
+    NOT_COMPLETE    = 0 # 対戦が完了していない
+    DRAW            = 1 # 引き分け
+    LOWER_WIN       = 2 # 下側のプレイヤーの勝利
+    UPPER_WIN       = 3 # 上側のプレイヤーの勝利
 
 class GameEnd:
 

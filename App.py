@@ -1,38 +1,40 @@
+import random
+from enum import IntEnum
+from Common import Common
 from GameManager import GameManager
 from Player import PlayerKind, Player
+from GameInfo import GameInfo
+from GameEnd import GameResult
+from AppFrame import AppFrame
+from StatusCanvas import StatusCanvas
+
+# 使用する戦略クラス(Playerを継承したクラス)をimportする
 from SamplePlayer1 import SamplePlayer1
 from SamplePlayer2 import SamplePlayer2
-from AppFrame import AppFrame
-from enum import IntEnum
-from GameEnd import GameResult
-from StatusCanvas import StatusCanvas
-from Common import Common
-from GameInfo import GameInfo
-import random
-
 
 # アプリ状態
-# PLAYING→WAITING_NEW_GAME→PLAYING→WAITING_NEW_GAME→...→PLAYING→RESULTという遷移になる
 class AppStatus(IntEnum):
-    PLAYING = 1
-    WAITING_NEW_GAME = 2
-    RESULT = 3
+    PLAYING             = 1    # 対戦中
+    WAITING_NEW_GAME    = 2    # 対戦開始待ち
+    RESULT              = 3    # 対戦終了(結果表示)
 
+# @class    アプリクラス
+# @brief    指定した回数の対戦を管理する
 class App:
 
+    # @brief    コンストラクタ
+    # @param    root     Tkinterのrootオブジェクト
     def __init__(self, root):
 
+        # rootをメンバにセット
         self.root = root
-
-        # とりあえず5回で固定
-        self.MAX_GAME_COUNT = 5
 
         # オブジェクトを初期化
         self.game_manager = None
         self.game_info = GameInfo()
 
         # プレイヤーの作成
-        ### ゲームに使用するPlayerクラスを変えたい場合、ここを変更してください ###
+        ### ゲームに使用するPlayerクラスを変えたい場合、ここを変更すること ###
         lower_player = SamplePlayer1(PlayerKind.LOWER)
         upper_player = SamplePlayer2(PlayerKind.UPPER)
         self.players = (lower_player, upper_player)
@@ -55,51 +57,56 @@ class App:
         self.status_canvas.place(x=0, y=0)
 
         # ステータス画面に初期値をセット
-        self.status_canvas.draw_player_name(self.players[PlayerKind.LOWER].name, self.players[PlayerKind.UPPER].name)
+        self.status_canvas.draw_player_name(self.players[PlayerKind.LOWER].get_name(), self.players[PlayerKind.UPPER].get_name())
         self.status_canvas.update_win_count(0, 0, 0)
 
-    # アプリを開始する(設定回数分ゲームを繰り返す)
+    # @brief    アプリを開始する(設定回数分ゲームを繰り返す)
+    # @details  最初だけ仮想的にクリックさせて1回目の対戦を開始する
     def start(self):
-
-        # アプリ状態は"対戦中"
-        self.status = AppStatus.WAITING_NEW_GAME
 
         # 乱暴だが共通化するためにクリックされたことにする
         self.on_clicked("<Button-1>")
 
-
-    # 画面をクリックした時の処理
+    # @brief    画面がクリックされたときのハンドラ
+    # @details  対戦開始待ちの場合、対戦を開始する
+    #           対戦中の場合、盤面を進める
+    #           指定した回数分対戦が終わっている場合、何もしない
     def on_clicked(self, event):
 
-        # 対戦終了後、再度クリックされたら次の対戦を開始
+        # アプリ状態によって処理を分ける
+        # 対戦開始待ちの場合、新しいゲームを開始する
         if self.status == AppStatus.WAITING_NEW_GAME:
             self.game_manager = GameManager(self, self.players[PlayerKind.LOWER], self.players[PlayerKind.UPPER])
             game_end_result = self.game_manager.start_game(self.game_info, self.get_next_first_turn_player(self.game_info.game_count))
 
-            # 1回の対戦が終了した場合
+            # 決着がついた場合は対戦終了処理
             if game_end_result != GameResult.NOT_COMPLETE:
                 self.finish_game(game_end_result)
+            # それ以外は対戦中に遷移
             else:
                 self.status = AppStatus.PLAYING
 
-        # 対戦中の場合
+        # 対戦中の場合、盤面を1ターン進める
         elif self.status == AppStatus.PLAYING:
 
-            # 対戦管理クラスに通知して1ターン進める
+            # 1ターン進める
             game_end_result = self.game_manager.step()
 
-            # 1回の対戦が終了した場合
+            # 決着がついた場合は対戦終了処理
             if game_end_result != GameResult.NOT_COMPLETE:
                 self.finish_game(game_end_result)
 
-
-
-    # 1回の対戦を終了する
+    # @brief    対戦終了処理
+    # @details  結果の表示と勝敗数の更新を行う
+    #           指定した回数対戦が完了していない場合、アプリ状態を"対戦開始待ち"にする
+    #           指定した回数対戦が完了した場合、アプリ状態を"結果表示"にする
+    # @param    game_end_result(GameResult) 対戦結果
+    # @return   なし
     def finish_game(self, game_end_result):
 
         # 結果をダイアログ表示
-        self.app_frame.show_result(game_end_result, self.players[PlayerKind.LOWER].name,
-                                   self.players[PlayerKind.UPPER].name)
+        self.app_frame.show_result(game_end_result, self.players[PlayerKind.LOWER].get_name(),
+                                   self.players[PlayerKind.UPPER].get_name())
 
         # 対戦数と勝利数情報を更新
         self.game_info.game_count += 1
@@ -114,23 +121,26 @@ class App:
 
         # 対戦がまだ残っていれば継続
         # 設定回数の対戦が終了していたら次の対戦に進まないように状態をセット
-        if self.game_info.game_count < self.MAX_GAME_COUNT:
+        if self.game_info.game_count < Common.MAX_GAME_COUNT:
             self.status = AppStatus.WAITING_NEW_GAME
         else:
             self.status = AppStatus.RESULT
 
-
-    # 先攻のプレイヤーを求める
+    # @brief    先攻のプレイヤー種別を求める
+    # @details  奇数回目は下側が先攻、偶数回目は上側が先攻になるようにする
+    #           ただし、最後の対戦はランダムで先攻を決める
+    # @param    (int)game_count 現時点で対戦が完了した回数
+    # @return   (PlayerKind)    先攻のプレイヤー種別
     def get_next_first_turn_player(self, game_count):
 
         # 最後の対戦はランダムで決定
-        if game_count == self.MAX_GAME_COUNT - 1:
+        if game_count == Common.MAX_GAME_COUNT - 1:
             if random.randint(1, 2) == 1:
                 return PlayerKind.LOWER
             else:
                 return PlayerKind.UPPER
 
-        # 基本的には奇数回目は下側が先攻、偶数回目は上側が先攻
+        # それ以外は、奇数回目は下側が先攻、偶数回目は上側が先攻
         else:
             if game_count % 2 == 0:
                 return PlayerKind.LOWER
