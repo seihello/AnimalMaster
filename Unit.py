@@ -1,8 +1,6 @@
 from abc import ABCMeta, abstractmethod
 from enum import IntEnum
 
-from PIL import Image, ImageTk
-
 class UnitKind(IntEnum):
     MOUSE = 0
     CAT = 1

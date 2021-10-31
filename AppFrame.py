@@ -1,5 +1,5 @@
+from tkinter import Frame, messagebox
 from PIL import Image, ImageTk
-from tkinter import messagebox, Frame
 
 from Common import Common
 from GameManager import GameResult

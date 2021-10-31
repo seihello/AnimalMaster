@@ -1,12 +1,12 @@
+from abc import ABCMeta, abstractmethod
 from enum import IntEnum
 from Unit import MoveDirection
-from abc import ABCMeta, abstractmethod
 
 class PlayerKind(IntEnum):
     LOWER = 0
     UPPER = 1
 
-class Player():
+class Player(metaclass=ABCMeta):
 
     def __init__(self, player_kind):
         self.player_kind = player_kind

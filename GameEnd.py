@@ -1,5 +1,4 @@
 from enum import IntEnum
-from Player import PlayerKind
 from Common import Common
 
 # 1回の対戦結果

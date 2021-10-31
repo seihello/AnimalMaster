@@ -1,12 +1,6 @@
-from PIL import Image, ImageTk
-import tkinter as tk
-from tkinter import messagebox
-
-from Common import Common
-from Unit import UnitKind
-from Player import PlayerKind
-
 from tkinter import Canvas
+from PIL import Image, ImageTk
+from Common import Common
 
 class StatusCanvas(Canvas):
     def __init__(self, app_frame):

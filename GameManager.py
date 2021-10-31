@@ -1,12 +1,10 @@
-from Unit import Human, Mouse, Cat, Wolf, UnitKind, MoveDirection
-from Player import PlayerKind, Player
-from Common import Common
 import copy
-from enum import IntEnum
+from Common import Common
+from Unit import Human, Mouse, Cat, Wolf, MoveDirection
+from Player import PlayerKind, Player
 from Collision import Collision
-from GameCanvas import GameCanvas
 from GameEnd import GameResult, GameEnd
-
+from GameCanvas import GameCanvas
 
 # @class    1回の対戦の管理クラス
 class GameManager:

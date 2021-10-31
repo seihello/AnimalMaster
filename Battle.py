@@ -1,7 +1,7 @@
 import random
 from enum import IntEnum
-from Unit import Unit, UnitKind
 from Common import Common
+from Unit import UnitKind
 
 class Effectivity(IntEnum):
     VERY_GOOD = 1
