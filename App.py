@@ -1,5 +1,5 @@
 from GameManager import GameManager
-from Player import SamplePlayer1, SamplePlayer2, PlayerKind
+from Player import PlayerKind, Player, SamplePlayer1, SamplePlayer2
 from AppFrame import AppFrame
 from enum import IntEnum
 from GameEnd import GameResult
@@ -20,6 +20,8 @@ class App:
 
     def __init__(self, root):
 
+        self.root = root
+
         # とりあえず5回で固定
         self.MAX_GAME_COUNT = 5
 
@@ -32,6 +34,14 @@ class App:
         lower_player = SamplePlayer1(PlayerKind.LOWER)
         upper_player = SamplePlayer2(PlayerKind.UPPER)
         self.players = (lower_player, upper_player)
+
+        # Playerクラスを継承していない場合強制終了
+        if not issubclass(type(lower_player), Player):
+            print("lower_player is not Player")
+            exit()
+        elif not issubclass(type(upper_player), Player):
+            print("upper_player is not Player")
+            exit()
 
         # アプリ状態は"対戦開始待ち"
         self.status = AppStatus.WAITING_NEW_GAME
@@ -62,6 +72,9 @@ class App:
 
         # アプリ状態は"対戦中"
         self.status = AppStatus.PLAYING
+
+
+
 
     # 画面をクリックした時の処理
     def on_clicked(self, event):

@@ -37,10 +37,10 @@ class GameEnd:
     # 敵陣営の進入によるゲーム終了を判定する
     def check_goal_arrival(self, lower_units, upper_units):
         for lower_unit in lower_units:
-            if lower_unit.x == 3 and lower_unit.y == 0:
+            if lower_unit.x == 3 and lower_unit.y == 0 and lower_unit.is_living:
                 return GameResult.LOWER_WIN
         for upper_unit in upper_units:
-            if upper_unit.x == 3 and upper_unit.y == Common.MASS_NUM - 1:
+            if upper_unit.x == 3 and upper_unit.y == Common.MASS_NUM - 1 and upper_unit.is_living:
                 return GameResult.UPPER_WIN
 
         return GameResult.NOT_COMPLETE

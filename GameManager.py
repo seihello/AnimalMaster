@@ -8,15 +8,20 @@ from GameCanvas import GameCanvas
 from GameEnd import GameResult, GameEnd
 
 
-# 1回の対戦を管理するクラス
+# @class    1回の対戦の管理クラス
 class GameManager:
 
+    # @brief    コンストラクタ
+    # @param    app     Appクラスのインスタンス(クリック通知用)
+    # @param    lower_player    プレイヤークラス(下側)
+    # @param    upper_player    プレイヤークラス(上側)
     def __init__(self, app, lower_player, upper_player):
 
-        # 対戦に使用するプレイヤー
+        # 対戦に使用するプレイヤーのリスト
+        # PlayerKind.LOWER(0)とPlayerKind.UPPER(1)をIndexに使ってアクセスする
         self.players = (lower_player, upper_player)
 
-        #
+        # 各種インスタンスの作成
         self.collision = Collision()
         self.game_end = GameEnd()
 
@@ -29,11 +34,12 @@ class GameManager:
         self.game_canvas = GameCanvas(app.app_frame)
         self.game_canvas.bind('<Button-1>', app.on_clicked)
 
-        # 一応明示
+        # その他メンバ変数の定義を明示
         self.current_turn_player = PlayerKind.LOWER
         self.turn = 0
 
-    # 1回の対戦を開始する
+    # @brief    1回の対戦を開始する
+    # @param    game_info   現時点の対戦
     def start_game(self, game_info, first_turn_player):
 
         # 先攻のプレイヤーが最初のターン(当たり前)
@@ -71,6 +77,8 @@ class GameManager:
         self.game_canvas.clear_units()
         self.game_canvas.draw_units(self.units[PlayerKind.LOWER])
         self.game_canvas.draw_units(self.units[PlayerKind.UPPER])
+
+
 
     # 1ターン進める
     def step(self):
@@ -129,6 +137,8 @@ class GameManager:
         # ゲームの終了を判定する
         game_end_result = self.game_end.check_game_end(self.units[PlayerKind.LOWER], self.units[PlayerKind.UPPER],
                                                        self.turn)
+
+        self.show_status()
 
         return game_end_result
 
