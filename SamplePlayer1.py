@@ -41,8 +41,8 @@ class SamplePlayer1(Player):
             my_units[6].set_move_direction(MoveDirection.UP)
             my_units[7].set_move_direction(MoveDirection.UP)
         else:
-            # 何もしない
+
             for my_unit in my_units:
-                if my_unit.initial_position != 4 and my_unit.initial_position != 5:
+                if my_unit.initial_position != 5 and my_unit.initial_position != 6:
                     my_unit.set_move_direction(MoveDirection.UP)
 

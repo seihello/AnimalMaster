@@ -1,5 +1,6 @@
 from abc import ABCMeta, abstractmethod
 from enum import IntEnum
+from Battle import Effectivity
 
 # 駒の種別
 class UnitKind(IntEnum):
@@ -53,77 +54,67 @@ class Unit(metaclass=ABCMeta):
     def reset_move_direction(self):
         self.move_direction = MoveDirection.STAY
 
-    # 移動方向をもとに座標を変更する(下側目線)
-    def move(self):
-        if self.move_direction == MoveDirection.STAY:
-            pass
-        elif self.move_direction == MoveDirection.UP:
-            self.y -= 1
-        elif self.move_direction == MoveDirection.UP_RIGHT:
-            self.x += 1
-            self.y -= 1
-        elif self.move_direction == MoveDirection.RIGHT:
-            self.x += 1
-        elif self.move_direction == MoveDirection.DOWN_RIGHT:
-            self.x += 1
-            self.y += 1
-        elif self.move_direction == MoveDirection.DOWN:
-            self.y += 1
-        elif self.move_direction == MoveDirection.DOWN_LEFT:
-            self.x -= 1
-            self.y += 1
-        elif self.move_direction == MoveDirection.LEFT:
-            self.x -= 1
-        elif self.move_direction == MoveDirection.UP_LEFT:
-            self.x -= 1
-            self.y -= 1
-
-    # 初期配置IDから座標をセットする(下側目線)
-    def set_position_from_initial_position(self):
-        if self.initial_position == 1:
-            self.x = 2
-            self.y = 5
-        elif self.initial_position == 2:
-            self.x = 4
-            self.y = 5
-        elif self.initial_position == 3:
-            self.x = 0
-            self.y = 5
-        elif self.initial_position == 4:
-            self.x = 6
-            self.y = 5
-        elif self.initial_position == 5:
-            self.x = 2
-            self.y = 6
-        elif self.initial_position == 6:
-            self.x = 4
-            self.y = 6
-        elif self.initial_position == 7:
-            self.x = 0
-            self.y = 6
-        elif self.initial_position == 8:
-            self.x = 6
-            self.y = 6
-        else:
-            self.is_living = False
-
+    @abstractmethod
+    def get_effectivity(self, opp_unit_kind):
+        pass
 
 class Mouse(Unit):
 
     def __init__(self, player_kind):
         super().__init__(player_kind, UnitKind.MOUSE)
 
+    def get_effectivity(self, opp_unit_kind):
+        if opp_unit_kind == UnitKind.MOUSE:
+            return Effectivity.EVEN
+        elif opp_unit_kind == UnitKind.CAT:
+            return Effectivity.VERY_BAD
+        elif opp_unit_kind == UnitKind.WOLF:
+            return Effectivity.VERY_GOOD
+        elif opp_unit_kind == UnitKind.HUMAN:
+            return Effectivity.BAD
+
+
 class Cat(Unit):
 
     def __init__(self, player_kind):
         super().__init__(player_kind, UnitKind.CAT)
+
+    def get_effectivity(self, opp_unit_kind):
+        if opp_unit_kind == UnitKind.MOUSE:
+            return Effectivity.VERY_GOOD
+        elif opp_unit_kind == UnitKind.CAT:
+            return Effectivity.EVEN
+        elif opp_unit_kind == UnitKind.WOLF:
+            return Effectivity.VERY_BAD
+        elif opp_unit_kind == UnitKind.HUMAN:
+            return Effectivity.BAD
 
 class Wolf(Unit):
 
     def __init__(self, player_kind):
         super().__init__(player_kind, UnitKind.WOLF)
 
+    def get_effectivity(self, opp_unit_kind):
+        if opp_unit_kind == UnitKind.MOUSE:
+            return Effectivity.VERY_BAD
+        elif opp_unit_kind == UnitKind.CAT:
+            return Effectivity.VERY_GOOD
+        elif opp_unit_kind == UnitKind.WOLF:
+            return Effectivity.EVEN
+        elif opp_unit_kind == UnitKind.HUMAN:
+            return Effectivity.BAD
+
 class Human(Unit):
 
     def __init__(self, player_kind):
         super().__init__(player_kind, UnitKind.HUMAN)
+
+    def get_effectivity(self, opp_unit_kind):
+        if opp_unit_kind == UnitKind.MOUSE:
+            return Effectivity.GOOD
+        elif opp_unit_kind == UnitKind.CAT:
+            return Effectivity.GOOD
+        elif opp_unit_kind == UnitKind.WOLF:
+            return Effectivity.GOOD
+        elif opp_unit_kind == UnitKind.HUMAN:
+            return Effectivity.EVEN
