@@ -45,8 +45,8 @@ class Unit(metaclass=ABCMeta):
         # 移動方向
         self.move_direction = MoveDirection.STAY
 
-    def set_initial_position(self, initial_position_id):
-        self.initial_position = initial_position_id
+    def set_initial_position(self, initial_position):
+        self.initial_position = initial_position
 
     def set_move_direction(self, direction):
         self.move_direction = direction
